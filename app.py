@@ -19,7 +19,6 @@ def get_db_connection():
 # Função para buscar todos os alunos
 def get_alunos():
     conn = get_db_connection()
-    # Usamos o pandas para ler o SQL e já transformar em um DataFrame
     df = pd.read_sql_query("SELECT * FROM alunos ORDER BY nome", conn)
     conn.close()
     return df
@@ -42,7 +41,6 @@ def get_notas_aluno(aluno_id):
     JOIN disciplinas d ON n.disciplina_id = d.id
     WHERE n.aluno_id = ?
     """
-    # Passamos o ID do aluno como parâmetro para a consulta
     df = pd.read_sql_query(query, conn, params=(aluno_id,))
     conn.close()
     return df
@@ -71,23 +69,19 @@ disciplinas_df = get_disciplinas()
 
 st.header("Consulta e Lançamento de Notas")
 
-# Selectbox para escolher o aluno
-# Usamos o dataframe de alunos para popular as opções
 aluno_selecionado_nome = st.selectbox(
     'Selecione o Aluno:',
     options=alunos_df['nome'],
-    index=None, # Faz com que nada seja selecionado por padrão
+    index=None, 
     placeholder="Escolha um aluno..."
 )
 
-# Se um aluno foi selecionado, o código dentro do "if" é executado
 if aluno_selecionado_nome:
-    # Encontra o ID do aluno selecionado
+    # CORREÇÃO APLICADA AQUI: Adicionado .iloc[0] para pegar o valor numérico do ID
     aluno_id_selecionado = alunos_df[alunos_df['nome'] == aluno_selecionado_nome]['id'].iloc[0]
 
     st.subheader(f"Notas de {aluno_selecionado_nome}")
 
-    # Busca e exibe as notas do aluno
     notas_df = get_notas_aluno(aluno_id_selecionado)
 
     if notas_df.empty:
@@ -97,36 +91,25 @@ if aluno_selecionado_nome:
 
     st.markdown("---")
 
-    # --- FORMULÁRIO PARA ADICIONAR NOVA NOTA ---
     st.subheader("Adicionar Nova Nota")
 
-    # st.form ajuda a agrupar vários inputs e um botão
-    # A ação só é executada quando o botão dentro do form é clicado
     with st.form("form_add_nota"):
-        # Selectbox para escolher a disciplina
         disciplina_selecionada_nome = st.selectbox(
             'Disciplina:',
             options=disciplinas_df['nome']
         )
         
-        # Input numérico para a nota
         nova_nota = st.number_input('Nota:', min_value=0.0, max_value=10.0, step=0.5)
         
-        # Botão de envio do formulário
         submitted = st.form_submit_button("Lançar Nota")
 
         if submitted:
-            # Encontra o ID da disciplina selecionada
+            # CORREÇÃO APLICADA AQUI: Adicionado .iloc[0] para pegar o valor numérico do ID
             disciplina_id_selecionada = disciplinas_df[disciplinas_df['nome'] == disciplina_selecionada_nome]['id'].iloc[0]
             
-            # Chama a função para adicionar a nota no banco
             adicionar_nota(aluno_id_selecionado, disciplina_id_selecionada, nova_nota)
             
-            # Exibe uma mensagem de sucesso
             st.success(f"Nota {nova_nota} em {disciplina_selecionada_nome} lançada com sucesso para {aluno_selecionado_nome}!")
             st.info("A tabela de notas será atualizada automaticamente.")
             
-            # Recarrega a página para mostrar a nova nota na tabela acima.
-            # Em apps maiores, existem técnicas mais avançadas, mas para este caso, é perfeito.
             st.rerun()
-
